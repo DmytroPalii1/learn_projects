@@ -1,0 +1,17 @@
+{
+    "1": {
+        "name": "Laptop",
+        "preis": 999.99,
+        "kategorie": "Elektronik"
+    },
+    "2": {
+        "name": "Kabellose Maus",
+        "preis": 29.99,
+        "kategorie": "Elektronik"
+    },
+    "4": {
+        "name": "Sofa",
+        "preis": 50.0,
+        "kategorie": "Möbel"
+    }
+}
