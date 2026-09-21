@@ -1,8 +1,8 @@
 {
     "1": {
-        "name": "Laptop",
-        "preis": 999.99,
-        "kategorie": "Elektronik"
+        "name": "PC",
+        "preis": 2000.0,
+        "kategorie": "Gaming"
     },
     "2": {
         "name": "Kabellose Maus",

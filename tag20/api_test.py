@@ -69,6 +69,25 @@ def zeige_produkt(produkt_id: int):
     )
 
 
+@app.put("/shop/{produkt_id}")
+def produkt_aktualisieren(produkt_id: str, neues_produkt: Produkt):
+    daten=lade_daten()
+
+    if produkt_id not in daten:
+        raise HTTPException(
+            status_code=404, detail="Produkt nicht gefunden"
+        )
+
+    aktualisiertes_produkt = neues_produkt.model_dump()
+
+    daten[produkt_id] = aktualisiertes_produkt
+    speichere_daten(daten)
+
+    antwort = aktualisiertes_produkt.copy()
+    antwort["id"] = produkt_id
+    return antwort
+
+
 @app.delete("/shop")
 def produkt_löschen(produkt_id):
     produkte_db=lade_daten()
