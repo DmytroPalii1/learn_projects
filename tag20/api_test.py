@@ -1,16 +1,16 @@
 import json
 from typing import Optional
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 app=FastAPI()
 
 
 class Produkt(BaseModel):
-    name: str
-    preis: float
-    kategorie: str
+    name: str = Field(min_length=2, max_length=50, description="Name des Produkts")
+    preis: float = Field(gt=0, description="Preis muss groesser als 0 sein")
+    kategorie: str = Field(min_length=2, max_length=50, description="Kategorie des Produkts", default="Allgemein")
 
 
 def lade_daten():

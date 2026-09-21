@@ -13,5 +13,10 @@
         "name": "Sofa",
         "preis": 50.0,
         "kategorie": "Möbel"
+    },
+    "5": {
+        "name": "Tastatur",
+        "preis": 78.89,
+        "kategorie": "gaming"
     }
 }
