@@ -18,5 +18,10 @@
         "name": "Tastatur",
         "preis": 78.89,
         "kategorie": "gaming"
+    },
+    "6": {
+        "name": "Tasse",
+        "preis": 5.0,
+        "kategorie": "Geschirr"
     }
 }

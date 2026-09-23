@@ -1,26 +1,23 @@
-import json
-from typing import Optional
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
+from fastapi.middleware.cors import CORSMiddleware
+from models import Produkt
+from storage import lade_daten, speichere_daten
+from typing import Optional
 
+app=FastAPI(
+    title="Produkt Management API",
+    description="Ein sauberes Backend-System",
+    version="1.0.0"
+)
 
-app=FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
-
-class Produkt(BaseModel):
-    name: str = Field(min_length=2, max_length=50, description="Name des Produkts")
-    preis: float = Field(gt=0, description="Preis muss groesser als 0 sein")
-    kategorie: str = Field(min_length=2, max_length=50, description="Kategorie des Produkts", default="Allgemein")
-
-
-def lade_daten():
-    with open("produkte.json","r",encoding="utf-8") as f:
-        return json.load(f)
-
-
-def speichere_daten(daten):
-    with open("produkte.json","w",encoding="utf-8") as f:
-        json.dump(daten, f, ensure_ascii=False, indent=4)
 
 
 @app.get("/")
@@ -30,9 +27,9 @@ def home():
 
 @app.get("/shop")
 def alle_produkte(kategorie: Optional[str]=None, max_preis: Optional[float]=None):
-    produkte_db=lade_daten()
+    produkte=lade_daten()
     gefilterte_produkte={}
-    for p_id, details in produkte_db.items():
+    for p_id, details in produkte.items():
         if kategorie and details["kategorie"].lower() != kategorie.lower():
             continue
         if max_preis and details["preis"]>max_preis:
@@ -43,12 +40,12 @@ def alle_produkte(kategorie: Optional[str]=None, max_preis: Optional[float]=None
     return gefilterte_produkte
 
     
-@app.post("/shop")
+@app.post("/shop", status_code=201)
 def neues_produkt_erstellen(neues_produkt: Produkt):
     produkte_db=lade_daten()
 
-    bestehende_ids = [int(i) for i in produkte_db.keys()]
-    neues_id = str(max(bestehende_ids)+1 if bestehende_ids else 1)
+    bestehende_ids=produkte_db.keys()
+    neues_id = str(max([int (id) for id in bestehende_ids])+1 if bestehende_ids else 1)
     produkte_db[neues_id]=neues_produkt.model_dump()
     speichere_daten(produkte_db)
     return {
