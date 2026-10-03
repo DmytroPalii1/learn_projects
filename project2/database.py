@@ -5,7 +5,6 @@ class User(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str
     email: str
-    is_active: bool = True
 
 sqlite_file_name = "app.db"
 sqlite_url = f"sqlite:///{sqlite_file_name}"
