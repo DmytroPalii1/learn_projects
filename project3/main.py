@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 import jwt
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from typing import List
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, status
@@ -47,6 +47,33 @@ app = FastAPI(title="SaaS Core API", lifespan=lifespan)
 def get_session():
     with Session(engine) as session:
         yield session
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def get_current_user(
+    token: str = Depends(oauth2_scheme), 
+    session: Session = Depends(get_session)
+) -> User:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except jwt.PyJWTError:
+        raise credentials_exception
+        
+    user = session.exec(select(User).where(User.username == username)).first()
+    if user is None:
+        raise credentials_exception
+        
+    return user
+
 
 # Endpoints
 
@@ -100,17 +127,6 @@ def login_for_access_token(
     }
 
 
-@app.get("/users", response_model=List[UserRead])
-def read_users(session: Session = Depends(get_session)):
-    statement = select(User)
-    return session.exec(statement).all()
-
-@app.get("/users/{user_id}", response_model=UserRead)
-def read_user(user_id: int, session: Session = Depends(get_session)):
-    user = session.get(User, user_id)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail=f"User with ID {user_id} not found"
-        )
-    return user
+@app.get("/users/me", response_model=UserRead)
+def read_current_user(current_user: User = Depends(get_current_user)):
+    return current_user
