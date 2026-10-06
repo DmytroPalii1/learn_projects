@@ -8,8 +8,8 @@ from sqlmodel import Session, select
 import bcrypt 
 
 from database import engine, create_db_and_tables
-from models import User
-from schemas import UserCreate, UserRead
+from models import User, Project
+from schemes import UserCreate, UserRead, ProjectCreate, ProjectRead, ProjectUpdate
 
 SECRET_KEY = "super_secret_saas_key_change_this_in_production"
 ALGORITHM = "HS256"
@@ -130,3 +130,105 @@ def login_for_access_token(
 @app.get("/users/me", response_model=UserRead)
 def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@app.post("/projects", response_model=ProjectRead)
+def create_project(
+    project_data: ProjectCreate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    db_project = Project(
+        title=project_data.title,
+        description=project_data.description,
+        owner_id=current_user.id, 
+    )
+
+    session.add(db_project)
+    session.commit()
+    session.refresh(db_project)
+
+    return db_project
+
+
+
+@app.get("/projects", response_model=list[ProjectRead])
+def read_projects(
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    statement = select(Project).where(Project.owner_id == current_user.id)
+
+    projects = session.exec(statement).all()
+
+    return projects
+
+
+@app.get("/projects/{project_id}", response_model=ProjectRead)
+def read_a_project(
+    project_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user)
+):
+    statement = select(Project).where(Project.id == project_id, Project.owner_id == current_user.id)
+
+    project = session.exec(statement).first()
+
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+    
+    return project
+
+
+@app.patch("/projects/{project_id}", response_model=ProjectRead)
+def update_project(
+    project_id: int,
+    project_data: ProjectUpdate,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    statement = select(Project).where(
+        Project.id == project_id, Project.owner_id == current_user.id
+    )
+    db_project = session.exec(statement).first()
+
+    if not db_project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    update_data = project_data.model_dump(exclude_unset=True)
+    db_project.sqlmodel_update(update_data)
+
+    session.add(db_project)
+    session.commit()
+    session.refresh(db_project)
+
+    return db_project
+
+
+@app.delete("/projects/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(
+    project_id: int,
+    session: Session = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    statement = select(Project).where(
+        Project.id == project_id, Project.owner_id == current_user.id
+    )
+    db_project = session.exec(statement).first()
+
+    if not db_project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found",
+        )
+
+    session.delete(db_project)
+    session.commit()
+
+    return None
